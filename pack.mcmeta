@@ -1,0 +1,16 @@
+{
+    "pack": {
+        "description": [
+            {
+                "text": "Mobcensus Mob Finder",
+                "color": "gold"
+            },
+            {
+                "text": "\nlocate hostiles + mob-cap pressure",
+                "color": "yellow"
+            }
+        ],
+        "min_format": 101,
+        "max_format": 107
+    }
+}
