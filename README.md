@@ -1,71 +1,108 @@
-# mobcensus
+<div align="center">
 
-A lightweight Minecraft datapack for **locating hostile mobs** and gauging
-**hostile mob-cap pressure** on a world or server. It adds a reusable
-`#mobcensus:hostiles` entity tag plus a few functions that report mob
-coordinates and per-type counts — handy for tracking down the dark cave, the
-misbehaving farm, or the trapped herd that's eating your monster cap.
+# 🧟 mobcensus
 
-## Requirements
+### Find every hostile on your map — and see what's eating your mob cap.
 
-- Minecraft **26.2** (datapack format `101`–`107`)
-- Works on any world or server (vanilla, Fabric, Paper, …) — it's a pure datapack
+A lightweight Minecraft **datapack** that locates hostile mobs and measures
+hostile **mob-cap pressure** with a reusable entity tag and a handful of
+drop-in functions.
 
-## Install
+[![CI](https://github.com/mhuot/mobcensus/actions/workflows/ci.yml/badge.svg)](https://github.com/mhuot/mobcensus/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mhuot/mobcensus?sort=semver)](https://github.com/mhuot/mobcensus/releases)
+[![License: MIT](https://img.shields.io/github/license/mhuot/mobcensus)](LICENSE)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?logo=minecraft&logoColor=white)](https://www.minecraft.net)
+[![pack_format](https://img.shields.io/badge/pack__format-101–107-1f6feb)](pack.mcmeta)
 
-1. Drop the `mobcensus` folder into your world's `datapacks/` directory:
-   `<world>/datapacks/mobcensus/`
-2. In-game (or via console) run `/reload`
-3. Confirm it loaded: `/datapack list` should show `file/mobcensus`
+</div>
 
-## Commands
+---
 
-| Command | Description | Best run from |
-| --- | --- | --- |
-| `/function mobcensus:here` | Hostiles within 128 blocks of you — coordinates + total | In-game (op) |
-| `/function mobcensus:loaded` | Every loaded hostile, all dimensions — coordinates + dimension + total | In-game (op) |
-| `/function mobcensus:counts` | Per-type counts written to storage `mobcensus:find counts` | Console / RCON |
-| `/function mobcensus:help` | Usage reminder | In-game |
+## ✨ Features
 
-### The `#mobcensus:hostiles` tag
+- 🎯 **Pinpoint hostiles** — dump coordinates of every hostile, near you or world-wide
+- 📊 **Mob-cap insight** — per-type counts to find what's clogging the monster cap
+- 🏷️ **Reusable tag** — `#mobcensus:hostiles` works in your own selectors
+- 🖥️ **RCON-friendly** — counts come back over the console, no client needed
+- 🪶 **Zero dependencies** — pure vanilla datapack, drops into any world or server
 
-The pack defines an entity-type tag covering the monster-category mobs. It's a
-normal tag, so you can use it directly in your own selectors:
-
-```mcfunction
-# quick total of all loaded hostiles
-execute if entity @e[type=#mobcensus:hostiles]
-```
-
-## RCON usage
-
-Over RCON, `tellraw` output is **not** returned — only command feedback and
-`data get` are. So:
+## 🚀 Quick start
 
 ```bash
-# quick total
-rcon-cli "execute if entity @e[type=#mobcensus:hostiles]"     # -> Test passed. Count: N
+# 1. copy the pack into your world
+cp -r mobcensus <world>/datapacks/
 
-# per-type breakdown (two steps)
-rcon-cli "function mobcensus:counts"
-rcon-cli "data get storage mobcensus:find counts"             # -> {zombie: 4, creeper: 2, total: 6, ...}
+# 2. in-game or via console
+/reload
 
-# a single mob's position
-rcon-cli "data get entity @e[type=#mobcensus:hostiles,limit=1] Pos"
+# 3. confirm it loaded
+/datapack list      # → file/mobcensus
 ```
 
-## Notes
+> [!TIP]
+> Prefer a packaged build? Grab `mobcensus-vX.Y.Z.zip` from the
+> [latest release](https://github.com/mhuot/mobcensus/releases/latest) and drop
+> the zip straight into `datapacks/`.
 
-- **Counts only mean something while chunks are loaded.** With no players
-  online, nothing spawns or ticks, so every count reads `0`. Run the functions
-  while players are active (ideally near the area you're investigating).
-- The tag includes a few mobs that don't fill the natural *ambient* monster cap
-  (bosses, raid mobs, shulkers, the warden). They're included so the pack is
-  useful as a general "find hostiles" tool; for cap analysis, focus on the
-  naturally-spawning mobs near players.
-- Tag entries are marked `required: false`, so a mob id that doesn't exist in a
-  given version is skipped rather than breaking the pack.
+## 🎮 Commands
 
-## License
+| Command | What it does | Best from |
+| --- | --- | --- |
+| `/function mobcensus:here` | Hostiles within 128 blocks of you — coords + total | In-game (op) |
+| `/function mobcensus:loaded` | Every loaded hostile, all dimensions — coords + dimension + total | In-game (op) |
+| `/function mobcensus:counts` | Per-type counts → storage `mobcensus:find counts` | Console / RCON |
+| `/function mobcensus:help` | Usage reminder | In-game |
 
-MIT — see [LICENSE](LICENSE).
+### 🏷️ The `#mobcensus:hostiles` tag
+
+It's a normal entity-type tag, so use it anywhere a selector is accepted:
+
+```mcfunction
+execute if entity @e[type=#mobcensus:hostiles]      # quick total of loaded hostiles
+```
+
+## 🖥️ RCON usage
+
+Over RCON, `tellraw` output isn't returned — only command feedback and
+`data get` are:
+
+```bash
+rcon-cli "execute if entity @e[type=#mobcensus:hostiles]"   # → Test passed. Count: N
+
+rcon-cli "function mobcensus:counts"
+rcon-cli "data get storage mobcensus:find counts"
+# → {zombie: 4, creeper: 2, total: 6, ...}
+```
+
+## 🛠️ Development
+
+```bash
+python scripts/validate_pack.py        # validate metadata + all JSON
+python scripts/build.py --output dist/mobcensus.zip   # package the datapack
+```
+
+CI runs on every push/PR (**validate → lint → build**); pushing a `vX.Y.Z` tag
+builds a versioned zip and publishes a GitHub Release automatically.
+
+```bash
+git tag v1.2.3 && git push origin v1.2.3   # cut a release
+```
+
+## 📝 Notes
+
+- **Counts need loaded chunks.** With no players online nothing spawns, so every
+  count reads `0`. Run the functions while players are active near the area.
+- The tag includes some mobs that don't fill the *ambient* monster cap (bosses,
+  raid mobs, shulkers, warden) so it's useful as a general hostile-finder; for
+  cap analysis, focus on naturally-spawning mobs near players.
+- Tag entries are `required: false`, so an id missing in a given version is
+  skipped instead of breaking the pack.
+
+## 📦 Requirements
+
+- Minecraft **26.2** (datapack format `101`–`107`)
+- Any world or server — vanilla, Fabric, Paper, …
+
+## 📄 License
+
+[MIT](LICENSE) © Mike Huot
