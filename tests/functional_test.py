@@ -48,10 +48,17 @@ def count(selector: str) -> int:
 
 
 def storage_int(path: str) -> int:
-    """Read an integer value from storage mobcensus:find at the given path."""
+    """Read an integer/byte value from storage mobcensus:find at the path."""
     out = rcon(f"data get storage mobcensus:find {path}")
-    match = re.search(r":\s*(-?\d+)\b", out)
+    match = re.search(r":\s*(-?\d+)", out)
     return int(match.group(1)) if match else -1
+
+
+def storage_str(path: str) -> str:
+    """Read a string value from storage mobcensus:find at the given path."""
+    out = rcon(f"data get storage mobcensus:find {path}")
+    match = re.search(r'contents:\s*"([^"]*)"', out)
+    return match.group(1) if match else ""
 
 
 def check(name: str, condition: bool, detail: str = "") -> None:
@@ -174,6 +181,31 @@ def test_cap_arithmetic() -> None:
     check("cap percent 47/70 == 67", pct == 67, str(pct))
 
 
+def test_loader_detection() -> None:
+    """Unattended clusters flag loader_suspect; an ender pearl reads as stasis."""
+    rcon("kill @e[tag=mc_test]")
+    for x, z in [(40, 40), (41, 41), (39, 40)]:
+        summon("zombie", x, z)
+    # No players online, so the cluster is unattended by definition.
+    rcon("function mobcensus:loaders")
+    check("unattended cluster flagged", storage_int("loaders[0].loader_suspect") == 1)
+    check(
+        "origin defaults to portal_loader",
+        storage_str("loaders[0].origin_type") == "portal_loader",
+    )
+    check(
+        "one cluster, not duplicated per dimension",
+        storage_int("loaders[1].count") == -1,
+    )
+    # A ticking ender pearl nearby should classify it as a stasis chamber.
+    rcon('summon minecraft:ender_pearl 40 100 40 {Tags:["mc_test"]}')
+    rcon("function mobcensus:loaders")
+    check(
+        "ender pearl -> stasis_chamber",
+        storage_str("loaders[0].origin_type") == "stasis_chamber",
+    )
+
+
 def main() -> None:
     """Run the full suite and exit non-zero on any failure."""
     print(f"mobcensus functional tests against container '{CONTAINER}'")
@@ -184,6 +216,7 @@ def main() -> None:
         test_persistent_excluded()
         test_tag_lanes()
         test_cap_arithmetic()
+        test_loader_detection()
     finally:
         teardown()
     print(f"\n{len(FAILURES)} failure(s)")

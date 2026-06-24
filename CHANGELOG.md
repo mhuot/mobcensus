@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `/function mobcensus:loaders` — reports only **unattended** cap clusters (no
+  player within 128 blocks), classifying each as `portal_loader` or
+  `stasis_chamber` (an ender pearl ticking nearby). Cluster records now carry
+  `loader_suspect` (byte) and `origin_type` (string); unattended clusters are
+  also collected into storage `mobcensus:find loaders`. New functional tests
+  cover the classification.
+
+### Fixed
+
+- `loaded` listed every hostile once **per dimension** because a bare `@e`
+  selector is not dimension-scoped (it already spans all dimensions). Reverted
+  to a single pass; the same fix applies to `loaders`. (Corrects a `loaded`
+  triple-listing introduced in 2.0.0.)
+
 ## [2.0.0] - 2026-06-24
 
 ### Added

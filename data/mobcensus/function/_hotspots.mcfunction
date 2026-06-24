@@ -2,6 +2,7 @@
 tag @s add mobcensus.viewer
 scoreboard players set #idx mobcensus 0
 scoreboard players set #max mobcensus 0
+scoreboard players set #loaders_mode mobcensus 0
 data modify storage mobcensus:find clusters set value []
 data modify storage mobcensus:find biggest set value {}
 $data modify storage mobcensus:tmp clustersize set value $(cluster)

@@ -1,0 +1,2 @@
+# Macro: idx, count, x, y, z, origin. One unattended-cluster line, click-to-tp.
+$tellraw @a[tag=mobcensus.viewer] ["", {"text": "  #$(idx)  ", "color": "gold"}, {"text": "$(count)", "color": "red"}, {"text": " mobs  ", "color": "gray"}, {"text": "[$(origin)]", "color": "light_purple"}, {"text": "  ", "color": "white"}, {"text": "[tp $(x) $(y) $(z)]", "color": "aqua", "underlined": true, "click_event": {"action": "run_command", "command": "/tp @s $(x) $(y) $(z)"}, "hover_event": {"action": "show_text", "value": "Unattended - likely $(origin)"}}]

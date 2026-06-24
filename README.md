@@ -42,6 +42,7 @@ The cap promise only ever points at the cap-accurate lane.
 | --- | --- | --- | --- |
 | `/function mobcensus:cap` | cap | Monster-cap **fill / estimated cap and percent, per dimension** | In-game / RCON |
 | `/function mobcensus:hotspots` | cap | Cap-eaters grouped into hotspots, **worst first**, click-to-teleport | In-game / RCON |
+| `/function mobcensus:loaders` | cap | **Unattended** clusters only (no player within 128) — flags portal-loader vs ender-pearl stasis | In-game / RCON |
 | `/function mobcensus:here` | finder | Hostiles within your radius, click-to-teleport | In-game |
 | `/function mobcensus:loaded` | finder | Every loaded hostile, **all dimensions**, click-to-teleport | In-game |
 | `/function mobcensus:counts` | finder | Per-type counts into storage | RCON |
@@ -78,6 +79,24 @@ radius of a player. The math lives in comments in `cap.mcfunction` /
 - Counts monster-category natural spawners; it does not model per-mob sub-rules
   (slime chunks, phantom-from-sleep) or the despawn sphere precisely.
 
+## Unattended loaders (`loaders`)
+
+`hotspots` only ever sees cap-eaters *near a player*. `loaders` is the inverse:
+it scans **every loaded `cap_mobs` cluster across all dimensions** and reports
+only the ones with **no player within 128 blocks** — i.e. mobs being kept alive
+by a chunk loader while nobody's around. Each cluster is tagged on the
+`clusters[]`/`loaders[]` records with:
+
+- `loader_suspect`: `1b` if unattended, else `0b`
+- `origin_type`: `"stasis_chamber"` if an ender pearl is ticking within 128
+  blocks, otherwise `"portal_loader"` (or `"player_present"` when attended)
+
+> [!NOTE]
+> This is a **heuristic**. The 128-block player/pearl checks are coarse: a
+> stasis pearl up to 128 blocks away can tag a *neighbouring* cluster as stasis,
+> and any unrelated ticking pearl reads as a chamber. Treat it as a strong hint
+> for "go look here", not proof.
+
 ## Configuration (no function editing)
 
 Tunables live in storage `mobcensus:config` with sane defaults:
@@ -108,6 +127,9 @@ rcon-cli "data get storage mobcensus:find cap"
 rcon-cli "function mobcensus:hotspots"
 rcon-cli "data get storage mobcensus:find clusters"   # [{cluster:1,count:18,pos:[...]}, ...]
 
+rcon-cli "function mobcensus:loaders"
+rcon-cli "data get storage mobcensus:find loaders"    # unattended only, with origin_type
+
 rcon-cli "function mobcensus:counts"
 rcon-cli "data get storage mobcensus:find counts"     # {zombie:4, creeper:2, total:6, ...}
 ```
@@ -120,6 +142,7 @@ No per-tick work — nothing runs unless you call it. Costs:
 | --- | --- |
 | `cap` | 3 dimension passes; each = one player scan + a player-group recursion + one mob scan |
 | `hotspots` | one scan to build the set, then one scan per emitted cluster (not per mob) |
+| `loaders` | one scan to tag all loaded cap mobs, then one scan per cluster (all dimensions, one pass) |
 | `here` | one scan + one line per hostile in range |
 | `loaded` | one line per loaded hostile across three dimensions |
 | `counts` | a handful of `if entity` scans |
