@@ -78,3 +78,10 @@ jobs:
       - name: Server logs (on failure)
         if: failure()
         run: docker logs mc 2>&1 | tail -120
+
+      # itzg writes server/ as its container user; make it runner-owned so the
+      # cache post-step can archive it. Runs always so the cache still saves
+      # even when the tests fail.
+      - name: Normalise server file ownership for caching
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" server 2>/dev/null || true
