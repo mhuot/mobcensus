@@ -51,7 +51,22 @@ cp -r mobcensus <world>/datapacks/
 | `/function mobcensus:here` | Hostiles within 128 blocks of you — coords + total | In-game (op) |
 | `/function mobcensus:loaded` | Every loaded hostile, all dimensions — coords + dimension + total | In-game (op) |
 | `/function mobcensus:counts` | Per-type counts → storage `mobcensus:find counts` | Console / RCON |
+| `/function mobcensus:hotspots` | Cap-eating hostiles grouped into clusters — each hotspot's coords + size, plus the biggest | In-game / RCON |
 | `/function mobcensus:help` | Usage reminder | In-game |
+
+### 🔥 Hotspots — what's actually eating the cap
+
+`/function mobcensus:hotspots` answers "where are the mobs filling my monster
+cap bunched up?" It selects the **cap-eating** mobs — non-persistent
+hostiles within 128 blocks of a player — then greedily groups them into
+**16-block clusters** and reports each hotspot's location and size (plus the
+single biggest one), so you can teleport straight to the problem.
+
+> [!NOTE]
+> It's scoped to the **dimension you run it in**, because the hostile mob cap
+> is per-dimension. Run it in the Overworld and the Nether separately. With no
+> players nearby, nothing is eating the cap, so it reports zero — that's
+> expected.
 
 ### 🏷️ The `#mobcensus:hostiles` tag
 
@@ -72,6 +87,12 @@ rcon-cli "execute if entity @e[type=#mobcensus:hostiles]"   # → Test passed. C
 rcon-cli "function mobcensus:counts"
 rcon-cli "data get storage mobcensus:find counts"
 # → {zombie: 4, creeper: 2, total: 6, ...}
+
+# hotspots: clusters of cap-eating mobs, biggest first to eyeball
+rcon-cli "function mobcensus:hotspots"
+rcon-cli "data get storage mobcensus:find clusters"
+# → [{cluster: 1, count: 4, pos: [40.5d, 100.0d, 40.5d]}, ...]
+rcon-cli "data get storage mobcensus:find biggest"
 ```
 
 ## 🛠️ Development

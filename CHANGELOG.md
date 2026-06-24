@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `/function mobcensus:hotspots` — groups the cap-eating hostiles (non-persistent
+  monster-category mobs within 128 blocks of a player, scoped to the current
+  dimension) into 16-block clusters and reports each hotspot's coordinates and
+  size, plus the single biggest one. Cluster data is also written to storage
+  `mobcensus:find clusters` / `mobcensus:find biggest` for RCON use.
+
 ## [1.0.0] - 2026-06-23
 
 ### Added
