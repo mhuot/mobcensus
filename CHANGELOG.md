@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-23
+
 ### Added
 
 - `/function mobcensus:hotspots` — groups the cap-eating hostiles (non-persistent
@@ -32,5 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD: validate + lint (black, pylint) + build on every push/PR, and a
   tag-triggered workflow that publishes a versioned datapack zip as a release.
 
-[Unreleased]: https://github.com/mhuot/mobcensus/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mhuot/mobcensus/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/mhuot/mobcensus/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mhuot/mobcensus/releases/tag/v1.0.0
