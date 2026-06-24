@@ -11,24 +11,44 @@ permissions:
 
 jobs:
   functional:
-    name: Boot 26.2 server and assert behaviour
+    name: MC ${{ matrix.mc_version }} - boot and assert
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      # One version's failure shouldn't cancel the others.
+      fail-fast: false
+      matrix:
+        # Add Minecraft versions here as support grows. Each must be compatible
+        # with data/mobcensus/.../pack.mcmeta (min_format / max_format), and may
+        # need version-aware expectations in tests/functional_test.py.
+        mc_version: ["26.2"]
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Stage datapack into a world
+      # Cache the itzg /data dir (server jar + version markers + libraries) per
+      # version, so the Mojang download is skipped on subsequent runs. Bump the
+      # trailing key version to force a refresh. The world is regenerated every
+      # run (below), so only the immutable server files are effectively reused.
+      - name: Cache server files
+        uses: actions/cache@v4
+        with:
+          path: server
+          key: mc-server-${{ matrix.mc_version }}-v1
+
+      - name: Stage a fresh world + datapack (reusing any cached server jar)
         run: |
+          rm -rf server/world server/logs
           mkdir -p server/world/datapacks/mobcensus
           cp -r pack.mcmeta data server/world/datapacks/mobcensus/
 
-      - name: Start a vanilla 26.2 server with the datapack
+      - name: Start a vanilla ${{ matrix.mc_version }} server with the datapack
         run: |
           docker run -d --name mc \
-            -e EULA=TRUE -e TYPE=VANILLA -e VERSION=26.2 \
+            -e EULA=TRUE -e TYPE=VANILLA -e VERSION=${{ matrix.mc_version }} \
             -e ENABLE_RCON=true -e RCON_PASSWORD=test \
             -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=false \
             -e VIEW_DISTANCE=4 -e SIMULATION_DISTANCE=4 \
