@@ -1,6 +1,8 @@
-# Every loaded hostile across all dimensions (in-game use).
+# Every loaded hostile across ALL dimensions (general finder lane). Each result
+# is click-to-teleport (dimension-aware). Cost: one line per loaded hostile.
 tag @s add mobcensus.viewer
-execute store result storage mobcensus:find n int 1 if entity @e[type=#mobcensus:hostiles]
-tellraw @a[tag=mobcensus.viewer] ["", {"text": "-- loaded hostiles (server-wide): ", "color": "gold"}, {"storage": "mobcensus:find", "nbt": "n", "color": "yellow"}, {"text": " --", "color": "gold"}]
-execute as @e[type=#mobcensus:hostiles] run tellraw @a[tag=mobcensus.viewer] ["", {"selector": "@s", "color": "red"}, {"text": "  ", "color": "white"}, {"nbt": "Pos", "entity": "@s", "color": "aqua"}, {"text": "  ", "color": "white"}, {"nbt": "Dimension", "entity": "@s", "color": "dark_gray"}]
+tellraw @a[tag=mobcensus.viewer] ["", {"text": "-- loaded hostiles (all dimensions) - click to teleport --", "color": "gold"}]
+execute in minecraft:overworld run function mobcensus:_loaded_dim
+execute in minecraft:the_nether run function mobcensus:_loaded_dim
+execute in minecraft:the_end run function mobcensus:_loaded_dim
 tag @s remove mobcensus.viewer

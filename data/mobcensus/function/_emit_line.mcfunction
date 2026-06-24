@@ -1,0 +1,2 @@
+# Macro: idx, count, x, y, z. Prints one click-to-teleport hotspot line.
+$tellraw @a[tag=mobcensus.viewer] ["", {"text": "  #$(idx)  ", "color": "gold"}, {"text": "$(count)", "color": "red"}, {"text": " mobs  ", "color": "gray"}, {"text": "[tp $(x) $(y) $(z)]", "color": "aqua", "underlined": true, "click_event": {"action": "run_command", "command": "/tp @s $(x) $(y) $(z)"}, "hover_event": {"action": "show_text", "value": "Teleport to this hotspot"}}]

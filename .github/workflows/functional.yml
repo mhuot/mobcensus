@@ -1,0 +1,60 @@
+name: Functional
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  functional:
+    name: Boot 26.2 server and assert behaviour
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Stage datapack into a world
+        run: |
+          mkdir -p server/world/datapacks/mobcensus
+          cp -r pack.mcmeta data server/world/datapacks/mobcensus/
+
+      - name: Start a vanilla 26.2 server with the datapack
+        run: |
+          docker run -d --name mc \
+            -e EULA=TRUE -e TYPE=VANILLA -e VERSION=26.2 \
+            -e ENABLE_RCON=true -e RCON_PASSWORD=test \
+            -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=false \
+            -e VIEW_DISTANCE=4 -e SIMULATION_DISTANCE=4 \
+            -e SPAWN_PROTECTION=0 -e ONLINE_MODE=FALSE -e MAX_TICK_TIME=-1 \
+            -v "$PWD/server:/data" \
+            itzg/minecraft-server:java25
+
+      - name: Wait for the server to accept rcon
+        run: |
+          for _ in $(seq 1 150); do
+            if docker exec mc rcon-cli list >/dev/null 2>&1; then echo "ready"; exit 0; fi
+            sleep 5
+          done
+          echo "server did not become ready"; docker logs mc | tail -80; exit 1
+
+      - name: Assert datapack enabled and every function loaded
+        run: |
+          docker exec mc rcon-cli "datapack list enabled" | grep -q mobcensus \
+            || { echo "mobcensus not enabled"; exit 1; }
+          if docker logs mc 2>&1 | grep -i "Failed to load function mobcensus"; then
+            echo "::error::A mobcensus function failed to load"; exit 1
+          fi
+
+      - name: Run functional tests
+        run: python tests/functional_test.py mc
+
+      - name: Server logs (on failure)
+        if: failure()
+        run: docker logs mc 2>&1 | tail -120

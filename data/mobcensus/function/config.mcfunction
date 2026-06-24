@@ -1,0 +1,3 @@
+# Show the current tunables. Change them with plain /data commands, e.g.
+#   /data modify storage mobcensus:config radius set value 96
+tellraw @s ["", {"text": "mobcensus config\n", "color": "gold"}, {"text": "  radius  (spawn range, blocks): ", "color": "gray"}, {"storage": "mobcensus:config", "nbt": "radius", "color": "yellow"}, {"text": "\n  cluster (hotspot size, blocks): ", "color": "gray"}, {"storage": "mobcensus:config", "nbt": "cluster", "color": "yellow"}, {"text": "\n  region  (player-group radius):  ", "color": "gray"}, {"storage": "mobcensus:config", "nbt": "region", "color": "yellow"}, {"text": "\nchange: ", "color": "gray"}, {"text": "/data modify storage mobcensus:config radius set value 96", "color": "white"}]

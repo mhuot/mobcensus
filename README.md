@@ -1,129 +1,153 @@
 <div align="center">
 
-# 🧟 mobcensus
+<img src="icon.png" width="120" alt="mobcensus icon" />
 
-### Find every hostile on your map — and see what's eating your mob cap.
+# mobcensus
 
-A lightweight Minecraft **datapack** that locates hostile mobs and measures
-hostile **mob-cap pressure** with a reusable entity tag and a handful of
-drop-in functions.
+### How full is your hostile mob cap right now — and where is the load sitting?
+
+A pure-vanilla Minecraft **datapack** (MC 26.2) that answers the one question
+vanilla never answers cleanly: it estimates the **monster mob-cap fill per
+dimension**, and pinpoints the **hotspots** of cap-eating mobs so you can click
+to teleport straight to them.
 
 [![CI](https://github.com/mhuot/mobcensus/actions/workflows/ci.yml/badge.svg)](https://github.com/mhuot/mobcensus/actions/workflows/ci.yml)
+[![Functional](https://github.com/mhuot/mobcensus/actions/workflows/functional.yml/badge.svg)](https://github.com/mhuot/mobcensus/actions/workflows/functional.yml)
 [![Release](https://img.shields.io/github/v/release/mhuot/mobcensus?sort=semver)](https://github.com/mhuot/mobcensus/releases)
 [![License: MIT](https://img.shields.io/github/license/mhuot/mobcensus)](LICENSE)
 [![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?logo=minecraft&logoColor=white)](https://www.minecraft.net)
-[![pack_format](https://img.shields.io/badge/pack__format-101–107-1f6feb)](pack.mcmeta)
+
+<img src="docs/demo.png" width="620" alt="example output" />
+
+*Example output — every `[tp ...]` is click-to-teleport. (A live gameplay gif is the one thing not auto-generated; drop one in at `docs/demo.gif`.)*
 
 </div>
 
 ---
 
-## ✨ Features
+## Two lanes (don't confuse them)
 
-- 🎯 **Pinpoint hostiles** — dump coordinates of every hostile, near you or world-wide
-- 📊 **Mob-cap insight** — per-type counts to find what's clogging the monster cap
-- 🏷️ **Reusable tag** — `#mobcensus:hostiles` works in your own selectors
-- 🖥️ **RCON-friendly** — counts come back over the console, no client needed
-- 🪶 **Zero dependencies** — pure vanilla datapack, drops into any world or server
+mobcensus deliberately separates two things vanilla blurs together:
 
-## 🚀 Quick start
+| Lane | Set | What it means | Used by |
+| --- | --- | --- | --- |
+| **Cap-accurate** | `#mobcensus:cap_mobs` | Monster-category natural spawners that actually count toward the hostile cap. Filtered at runtime to **non-persistent** mobs **within spawn range of a player**. | `cap`, `hotspots` |
+| **General finder** | `#mobcensus:hostiles` | *Everything* hostile — `cap_mobs` **plus** shulkers and the warden. For "just find me any hostile." | `here`, `loaded`, `counts` |
 
-```bash
-# 1. copy the pack into your world
-cp -r mobcensus <world>/datapacks/
+The cap promise only ever points at the cap-accurate lane.
 
-# 2. in-game or via console
-/reload
+## Commands
 
-# 3. confirm it loaded
-/datapack list      # → file/mobcensus
+| Command | Lane | What it does | Best from |
+| --- | --- | --- | --- |
+| `/function mobcensus:cap` | cap | Monster-cap **fill / estimated cap and percent, per dimension** | In-game / RCON |
+| `/function mobcensus:hotspots` | cap | Cap-eaters grouped into hotspots, **worst first**, click-to-teleport | In-game / RCON |
+| `/function mobcensus:here` | finder | Hostiles within your radius, click-to-teleport | In-game |
+| `/function mobcensus:loaded` | finder | Every loaded hostile, **all dimensions**, click-to-teleport | In-game |
+| `/function mobcensus:counts` | finder | Per-type counts into storage | RCON |
+| `/function mobcensus:config` | — | Show the tunables | In-game |
+| `/function mobcensus:help` | — | Command list | In-game |
+
+## How the cap number is estimated (and where it's approximate)
+
+Vanilla's monster cap is:
+
+```
+monster_cap = 70 × eligible_chunks ÷ 289
 ```
 
-> [!TIP]
-> Prefer a packaged build? Grab `mobcensus-vX.Y.Z.zip` from the
-> [latest release](https://github.com/mhuot/mobcensus/releases/latest) and drop
-> the zip straight into `datapacks/`.
+`289` is the 17×17 chunk area around each player, and the game counts the
+**union of unique chunks** across all players (so the cap grows as players
+spread out). **A pure datapack cannot read the eligible-chunk count.** So
+mobcensus approximates:
 
-## 🎮 Commands
+```
+estimated_cap = 70 × (number of separated player groups in the dimension)
+```
 
-| Command | What it does | Best from |
+Each isolated player group is treated as one full 289-chunk (cap-70) area. The
+fill is the count of non-persistent `#mobcensus:cap_mobs` within the configured
+radius of a player. The math lives in comments in `cap.mcfunction` /
+`_cap_calc.mcfunction` so it's auditable.
+
+**Honest gaps** (see [the report below](#known-approximations)):
+- Exact for a single player group; an approximation when players spread out (it
+  ignores *partial* chunk overlap between groups).
+- Assumes simulation distance ≥ 8 (the spawn-range cap). Lower settings shrink
+  the real per-player area.
+- Counts monster-category natural spawners; it does not model per-mob sub-rules
+  (slime chunks, phantom-from-sleep) or the despawn sphere precisely.
+
+## Configuration (no function editing)
+
+Tunables live in storage `mobcensus:config` with sane defaults:
+
+| Key | Default | Meaning |
 | --- | --- | --- |
-| `/function mobcensus:here` | Hostiles within 128 blocks of you — coords + total | In-game (op) |
-| `/function mobcensus:loaded` | Every loaded hostile, all dimensions — coords + dimension + total | In-game (op) |
-| `/function mobcensus:counts` | Per-type counts → storage `mobcensus:find counts` | Console / RCON |
-| `/function mobcensus:hotspots` | Cap-eating hostiles grouped into clusters — each hotspot's coords + size, plus the biggest | In-game / RCON |
-| `/function mobcensus:help` | Usage reminder | In-game |
+| `radius` | `128` | Spawn range scanned around each player |
+| `cluster` | `16` | Hotspot grouping radius |
+| `region` | `256` | Distance under which players share one cap "group" |
 
-### 🔥 Hotspots — what's actually eating the cap
-
-`/function mobcensus:hotspots` answers "where are the mobs filling my monster
-cap bunched up?" It selects the **cap-eating** mobs — non-persistent
-hostiles within 128 blocks of a player — then greedily groups them into
-**16-block clusters** and reports each hotspot's location and size (plus the
-single biggest one), so you can teleport straight to the problem.
-
-> [!NOTE]
-> It's scoped to the **dimension you run it in**, because the hostile mob cap
-> is per-dimension. Run it in the Overworld and the Nether separately. With no
-> players nearby, nothing is eating the cap, so it reports zero — that's
-> expected.
-
-### 🏷️ The `#mobcensus:hostiles` tag
-
-It's a normal entity-type tag, so use it anywhere a selector is accepted:
+Change them with plain commands (they survive reloads):
 
 ```mcfunction
-execute if entity @e[type=#mobcensus:hostiles]      # quick total of loaded hostiles
+/data modify storage mobcensus:config radius set value 96
+/function mobcensus:config        # show current values
 ```
 
-## 🖥️ RCON usage
+## RCON usage
 
-Over RCON, `tellraw` output isn't returned — only command feedback and
-`data get` are:
+`tellraw` output isn't returned over RCON — command feedback and `data get`
+are. Everything is mirrored to storage:
 
 ```bash
-rcon-cli "execute if entity @e[type=#mobcensus:hostiles]"   # → Test passed. Count: N
+rcon-cli "function mobcensus:cap"
+rcon-cli "data get storage mobcensus:find cap"
+# → {overworld:{fill:47,cap:70,percent:67,players:1,regions:1}, nether:{...}, end:{...}}
+
+rcon-cli "function mobcensus:hotspots"
+rcon-cli "data get storage mobcensus:find clusters"   # [{cluster:1,count:18,pos:[...]}, ...]
 
 rcon-cli "function mobcensus:counts"
-rcon-cli "data get storage mobcensus:find counts"
-# → {zombie: 4, creeper: 2, total: 6, ...}
-
-# hotspots: clusters of cap-eating mobs, biggest first to eyeball
-rcon-cli "function mobcensus:hotspots"
-rcon-cli "data get storage mobcensus:find clusters"
-# → [{cluster: 1, count: 4, pos: [40.5d, 100.0d, 40.5d]}, ...]
-rcon-cli "data get storage mobcensus:find biggest"
+rcon-cli "data get storage mobcensus:find counts"     # {zombie:4, creeper:2, total:6, ...}
 ```
 
-## 🛠️ Development
+## Performance
+
+No per-tick work — nothing runs unless you call it. Costs:
+
+| Function | Cost |
+| --- | --- |
+| `cap` | 3 dimension passes; each = one player scan + a player-group recursion + one mob scan |
+| `hotspots` | one scan to build the set, then one scan per emitted cluster (not per mob) |
+| `here` | one scan + one line per hostile in range |
+| `loaded` | one line per loaded hostile across three dimensions |
+| `counts` | a handful of `if entity` scans |
+
+Clustering is greedy and bounded by cluster count, so it stays cheap even with
+hundreds of mobs. With no players online, the cap is correctly `0`.
+
+## Install
+
+1. Copy the `mobcensus` folder into your world: `<world>/datapacks/mobcensus/`
+2. `/reload` (or restart). Confirm with `/datapack list` → `file/mobcensus`.
+
+Requirements: **Minecraft 26.2** (datapack format `101`–`107`). Works on any
+world or server — vanilla, Fabric, Paper.
+
+## Development
 
 ```bash
-python scripts/validate_pack.py        # validate metadata + all JSON
-python scripts/build.py --output dist/mobcensus.zip   # package the datapack
+python scripts/validate_pack.py                  # metadata + JSON
+python scripts/build.py --output dist/mobcensus.zip
+python tests/functional_test.py mc-mayhem        # behavioural tests vs a live server
 ```
 
-CI runs on every push/PR (**validate → lint → build**); pushing a `vX.Y.Z` tag
-builds a versioned zip and publishes a GitHub Release automatically.
+CI runs **validate → lint (black, pylint) → build**, plus a **functional**
+workflow that boots a real 26.2 server, asserts every function loads (no parse
+regressions), and checks clustering, counts, tag lanes, and the cap math.
+Tagging `vX.Y.Z` builds and publishes a release zip.
 
-```bash
-git tag v1.2.3 && git push origin v1.2.3   # cut a release
-```
-
-## 📝 Notes
-
-- **Counts need loaded chunks.** With no players online nothing spawns, so every
-  count reads `0`. Run the functions while players are active near the area.
-- The tag includes some mobs that don't fill the *ambient* monster cap (bosses,
-  raid mobs, shulkers, warden) so it's useful as a general hostile-finder; for
-  cap analysis, focus on naturally-spawning mobs near players.
-- Tag entries are `required: false`, so an id missing in a given version is
-  skipped instead of breaking the pack.
-
-## 📦 Requirements
-
-- Minecraft **26.2** (datapack format `101`–`107`)
-- Any world or server — vanilla, Fabric, Paper, …
-
-## 📄 License
+## License
 
 [MIT](LICENSE) © Mike Huot

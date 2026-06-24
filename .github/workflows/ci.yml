@@ -37,9 +37,9 @@ jobs:
       - name: Install linters
         run: pip install black pylint
       - name: black --check
-        run: black --check scripts
+        run: black --check scripts tests
       - name: pylint (fail under 8.0)
-        run: pylint --fail-under=8.0 scripts/*.py
+        run: pylint --fail-under=8.0 scripts/*.py tests/*.py
 
   build:
     name: Build datapack zip
