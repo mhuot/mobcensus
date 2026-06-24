@@ -7,8 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Cap lane realigned to `MobCategory.MONSTER`.** `#mobcensus:cap_mobs` is now
+  exactly the MONSTER spawn category (added `shulker`, `vex`, `giant`, and
+  `warden`) instead of "monster-category natural spawners". The hostile cap
+  counts loaded, non-persistent MONSTER mobs regardless of how they spawned, so
+  the old wording undercounted — most notably a loaded shulker farm (a classic
+  chunk-loader cap-clog) was invisible to `cap`/`hotspots`/`loaders`. The
+  runtime `non-persistent` filter is unchanged and is what keeps the count
+  cap-accurate. **Warden** is included: it is MONSTER and occupies a slot;
+  because it is effectively persistent, the runtime filter excludes it in
+  practice, so including it is correct and harmless.
+- Collapsed the redundant `#mobcensus:hostiles` tag (it only existed to hold
+  shulker/warden out of the cap lane). `here`/`loaded`/`counts` now use
+  `#mobcensus:cap_mobs` directly and so also surface shulkers/vex, which is
+  correct. Docs reframed from "two lanes" to one MONSTER set with two filters.
+
 ### Added
 
+- Daily **version-watch** CI: discovers newly released Minecraft versions
+  (releases + snapshots) from Mojang's manifest and runs the functional suite
+  against each via a dynamic matrix, opening/updating a tracking issue on
+  failure (e.g. a new data pack format beyond `max_format`, or a behavioural
+  change). Boot+test logic is factored into a reusable composite action shared
+  with the functional workflow.
+- **Auto-promotion of releases**: `supported-versions.json` is the single source
+  of truth for the functional test matrix; version-watch appends a release to it
+  (and the README "Supported versions" block) once that release passes, so new
+  releases join ongoing regression testing automatically. Snapshots are never
+  promoted, and Modrinth's compatibility list stays manual (it's a broader range
+  than the sampled matrix).
 - Verified support for **Minecraft 26.1.x** (26.1 / 26.1.1 / 26.1.2). Their data
   pack format is `101`, already inside the pack's declared `101`–`107` range, so
   no `pack.mcmeta` change was needed. The functional CI matrix now boots 26.1.2

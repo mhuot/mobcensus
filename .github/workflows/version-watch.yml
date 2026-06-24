@@ -1,0 +1,130 @@
+name: Version Watch
+
+# Daily: discover newly released Minecraft versions (releases + snapshots) and
+# run the functional suite against each. A failure usually means either a new
+# data pack format beyond pack.mcmeta max_format, or a behavioural change worth
+# looking at - so the report job opens/updates a tracking issue.
+#
+# TODO (follow-up, not built): also diff the entity registry per release and
+# flag an "unclassified new entity" so a new MONSTER-category mob can't silently
+# fall out of #mobcensus:cap_mobs (which is now exactly MobCategory.MONSTER).
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: How many hours back to consider versions "new"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  discover:
+    name: Discover new versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.find.outputs.versions }}
+      count: ${{ steps.find.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: find
+        env:
+          LOOKBACK_HOURS: ${{ github.event.inputs.lookback_hours || '30' }}
+        run: python tools/find_new_versions.py >> "$GITHUB_OUTPUT"
+
+  test:
+    name: MC ${{ matrix.mc_version }} - boot and assert
+    needs: discover
+    if: needs.discover.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        mc_version: ${{ fromJSON(needs.discover.outputs.versions) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/boot-and-test
+        with:
+          mc-version: ${{ matrix.mc_version }}
+      # Record that this version passed; the promote job collects these.
+      - name: Record pass marker
+        if: success()
+        run: |
+          mkdir -p passed
+          echo "${{ matrix.mc_version }}" > "passed/${{ matrix.mc_version }}"
+      - name: Upload pass marker
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: passed-${{ matrix.mc_version }}
+          path: passed/
+          if-no-files-found: ignore
+
+  promote:
+    name: Auto-add passing releases
+    needs: [discover, test]
+    if: ${{ always() && needs.discover.outputs.count != '0' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download pass markers
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          path: passed
+          pattern: passed-*
+          merge-multiple: true
+      # Adds passing RELEASES (not snapshots) to supported-versions.json +
+      # the README block, and reports whether anything changed.
+      - id: promote
+        run: python tools/promote_versions.py passed >> "$GITHUB_OUTPUT"
+      - name: Commit and push if changed
+        if: steps.promote.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supported-versions.json README.md
+          git commit -m "Auto-add newly passing release(s) to the supported version matrix"
+          git push
+
+  report:
+    name: Report failures
+    needs: [discover, test]
+    if: ${{ always() && needs.test.result == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSIONS: ${{ needs.discover.outputs.versions }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create version-watch --color B60205 --description "New MC version test failures" -R "$REPO" 2>/dev/null || true
+          body="The scheduled version-watch run found failures testing newly released Minecraft version(s): \`$VERSIONS\`.
+
+          Likely causes: a new data pack format beyond \`pack.mcmeta\` \`max_format\`, a Java requirement beyond the pinned image, or a behavioural change.
+
+          Run: $RUN_URL"
+          existing=$(gh issue list --label version-watch --state open --json number -q '.[0].number' -R "$REPO")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" -R "$REPO" --body "$body"
+          else
+            gh issue create -R "$REPO" --title "Version watch: failures on new Minecraft version(s)" --label version-watch --body "$body"
+          fi

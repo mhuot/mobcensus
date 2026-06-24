@@ -1,7 +1,7 @@
 # Per-type hostile counts written to storage mobcensus:find counts.
 # RCON-friendly: run this, then `data get storage mobcensus:find counts`.
 data modify storage mobcensus:find counts set value {}
-execute store result storage mobcensus:find counts.total int 1 if entity @e[type=#mobcensus:hostiles]
+execute store result storage mobcensus:find counts.total int 1 if entity @e[type=#mobcensus:cap_mobs]
 execute store result storage mobcensus:find counts.zombie int 1 if entity @e[type=minecraft:zombie]
 execute store result storage mobcensus:find counts.husk int 1 if entity @e[type=minecraft:husk]
 execute store result storage mobcensus:find counts.drowned int 1 if entity @e[type=minecraft:drowned]

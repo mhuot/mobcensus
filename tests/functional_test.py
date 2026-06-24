@@ -153,17 +153,23 @@ def test_persistent_excluded() -> None:
     )
 
 
-def test_tag_lanes() -> None:
-    """shulker/warden are in the broad finder but not the cap-accurate set."""
+def test_cap_mobs_is_monster_category() -> None:
+    """cap_mobs == MONSTER: a shulker is now included, and the non-persistent
+    runtime filter is what keeps it cap-accurate (a persistent one is excluded)."""
     rcon("kill @e[tag=mc_test]")
-    summon("shulker", 0, 8)
+    summon("shulker", 0, 8, persistent=False)
+    summon("shulker", 4, 8, persistent=True)
     check(
-        "shulker is in #mobcensus:hostiles",
-        count("@e[type=#mobcensus:hostiles,tag=mc_test]") == 1,
+        "shulker is now in #mobcensus:cap_mobs",
+        count("@e[type=#mobcensus:cap_mobs,tag=mc_test]") == 2,
+    )
+    rcon("tag @e remove mobcensus.cap")
+    rcon(
+        "tag @e[type=#mobcensus:cap_mobs,nbt=!{PersistenceRequired:1b}] add mobcensus.cap"
     )
     check(
-        "shulker is NOT in #mobcensus:cap_mobs",
-        count("@e[type=#mobcensus:cap_mobs,tag=mc_test]") == 0,
+        "only the non-persistent shulker enters the cap set",
+        count("@e[tag=mobcensus.cap,tag=mc_test]") == 1,
     )
 
 
@@ -214,7 +220,7 @@ def main() -> None:
         test_functions_load()
         test_cluster_grouping()
         test_persistent_excluded()
-        test_tag_lanes()
+        test_cap_mobs_is_monster_category()
         test_cap_arithmetic()
         test_loader_detection()
     finally:

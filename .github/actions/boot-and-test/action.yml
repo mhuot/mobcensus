@@ -1,0 +1,66 @@
+name: Boot and test
+description: Stage the datapack, boot an itzg server for a Minecraft version, and run the functional suite.
+
+inputs:
+  mc-version:
+    description: Minecraft version id to boot (release or snapshot)
+    required: true
+  image:
+    description: itzg image tag to use
+    required: false
+    default: itzg/minecraft-server:java25
+
+runs:
+  using: composite
+  steps:
+    - name: Stage a fresh world + datapack
+      shell: bash
+      run: |
+        rm -rf server/world server/logs
+        mkdir -p server/world/datapacks/mobcensus
+        cp -r pack.mcmeta data server/world/datapacks/mobcensus/
+
+    - name: Start the server
+      shell: bash
+      run: |
+        docker run -d --name mc \
+          -e EULA=TRUE -e TYPE=VANILLA -e VERSION="${{ inputs.mc-version }}" \
+          -e ENABLE_RCON=true -e RCON_PASSWORD=test \
+          -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=false \
+          -e VIEW_DISTANCE=4 -e SIMULATION_DISTANCE=4 \
+          -e SPAWN_PROTECTION=0 -e ONLINE_MODE=FALSE -e MAX_TICK_TIME=-1 \
+          -e PAUSE_WHEN_EMPTY_SECONDS=86400 -e DISABLE_HEALTHCHECK=true \
+          -v "$PWD/server:/data" \
+          "${{ inputs.image }}"
+
+    - name: Wait for the server to accept rcon
+      shell: bash
+      run: |
+        for _ in $(seq 1 150); do
+          if docker exec mc rcon-cli list >/dev/null 2>&1; then echo "ready"; exit 0; fi
+          sleep 5
+        done
+        echo "server did not become ready"; docker logs mc | tail -80; exit 1
+
+    - name: Assert datapack enabled and every function loaded
+      shell: bash
+      run: |
+        docker exec mc rcon-cli "datapack list enabled" | grep -q mobcensus \
+          || { echo "::error::mobcensus not enabled on ${{ inputs.mc-version }} (incompatible pack_format?)"; exit 1; }
+        if docker logs mc 2>&1 | grep -i "Failed to load function mobcensus"; then
+          echo "::error::A mobcensus function failed to load on ${{ inputs.mc-version }}"; exit 1
+        fi
+
+    - name: Run functional tests
+      shell: bash
+      run: python tests/functional_test.py mc
+
+    - name: Server logs (on failure)
+      if: ${{ failure() }}
+      shell: bash
+      run: docker logs mc 2>&1 | tail -120
+
+    - name: Remove container
+      if: ${{ always() }}
+      shell: bash
+      run: docker rm -f mc 2>/dev/null || true

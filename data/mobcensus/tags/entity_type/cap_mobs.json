@@ -32,6 +32,10 @@
         { "id": "minecraft:evoker", "required": false },
         { "id": "minecraft:ravager", "required": false },
         { "id": "minecraft:illusioner", "required": false },
-        { "id": "minecraft:breeze", "required": false }
+        { "id": "minecraft:breeze", "required": false },
+        { "id": "minecraft:shulker", "required": false },
+        { "id": "minecraft:vex", "required": false },
+        { "id": "minecraft:giant", "required": false },
+        { "id": "minecraft:warden", "required": false }
     ]
 }

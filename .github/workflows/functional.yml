@@ -10,18 +10,28 @@ permissions:
   contents: read
 
 jobs:
+  load:
+    name: Load supported versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.read.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v4
+      # supported-versions.json is the single source of truth for the matrix.
+      # version-watch appends a release to it once that release passes.
+      - id: read
+        run: echo "versions=$(jq -c . supported-versions.json)" >> "$GITHUB_OUTPUT"
+
   functional:
     name: MC ${{ matrix.mc_version }} - boot and assert
+    needs: load
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       # One version's failure shouldn't cancel the others.
       fail-fast: false
       matrix:
-        # Add Minecraft versions here as support grows. Each must be compatible
-        # with data/mobcensus/.../pack.mcmeta (min_format / max_format), and may
-        # need version-aware expectations in tests/functional_test.py.
-        mc_version: ["26.1.2", "26.2"]
+        mc_version: ${{ fromJSON(needs.load.outputs.versions) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -58,44 +68,7 @@ jobs:
           path: server
           key: mc-server-${{ matrix.mc_version }}-v2
 
-      - name: Stage a fresh world + datapack
-        run: |
-          rm -rf server/world server/logs
-          mkdir -p server/world/datapacks/mobcensus
-          cp -r pack.mcmeta data server/world/datapacks/mobcensus/
-
-      - name: Start the server with the datapack (jar already present)
-        run: |
-          docker run -d --name mc \
-            -e EULA=TRUE -e TYPE=VANILLA -e VERSION=${{ matrix.mc_version }} \
-            -e ENABLE_RCON=true -e RCON_PASSWORD=test \
-            -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=false \
-            -e VIEW_DISTANCE=4 -e SIMULATION_DISTANCE=4 \
-            -e SPAWN_PROTECTION=0 -e ONLINE_MODE=FALSE -e MAX_TICK_TIME=-1 \
-            -e PAUSE_WHEN_EMPTY_SECONDS=86400 \
-            -e DISABLE_HEALTHCHECK=true \
-            -v "$PWD/server:/data" \
-            itzg/minecraft-server:java25
-
-      - name: Wait for the server to accept rcon
-        run: |
-          for _ in $(seq 1 150); do
-            if docker exec mc rcon-cli list >/dev/null 2>&1; then echo "ready"; exit 0; fi
-            sleep 5
-          done
-          echo "server did not become ready"; docker logs mc | tail -80; exit 1
-
-      - name: Assert datapack enabled and every function loaded
-        run: |
-          docker exec mc rcon-cli "datapack list enabled" | grep -q mobcensus \
-            || { echo "mobcensus not enabled"; exit 1; }
-          if docker logs mc 2>&1 | grep -i "Failed to load function mobcensus"; then
-            echo "::error::A mobcensus function failed to load"; exit 1
-          fi
-
-      - name: Run functional tests
-        run: python tests/functional_test.py mc
-
-      - name: Server logs (on failure)
-        if: failure()
-        run: docker logs mc 2>&1 | tail -120
+      # Boot the server (jar already staged in server/) and run the suite.
+      - uses: ./.github/actions/boot-and-test
+        with:
+          mc-version: ${{ matrix.mc_version }}

@@ -1,7 +1,0 @@
-{
-    "values": [
-        { "id": "#mobcensus:cap_mobs", "required": false },
-        { "id": "minecraft:shulker", "required": false },
-        { "id": "minecraft:warden", "required": false }
-    ]
-}
