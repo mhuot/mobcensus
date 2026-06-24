@@ -72,6 +72,8 @@ jobs:
             -e LEVEL_TYPE=minecraft:flat -e GENERATE_STRUCTURES=false \
             -e VIEW_DISTANCE=4 -e SIMULATION_DISTANCE=4 \
             -e SPAWN_PROTECTION=0 -e ONLINE_MODE=FALSE -e MAX_TICK_TIME=-1 \
+            -e PAUSE_WHEN_EMPTY_SECONDS=86400 \
+            -e DISABLE_HEALTHCHECK=true \
             -v "$PWD/server:/data" \
             itzg/minecraft-server:java25
 
