@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Verified support for **Minecraft 26.1.x** (26.1 / 26.1.1 / 26.1.2). Their data
+  pack format is `101`, already inside the pack's declared `101`–`107` range, so
+  no `pack.mcmeta` change was needed. The functional CI matrix now boots 26.1.2
+  alongside 26.2 to prove it loads and behaves identically.
+
 ## [2.1.0] - 2026-06-24
 
 ### Added

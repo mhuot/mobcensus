@@ -21,7 +21,7 @@ jobs:
         # Add Minecraft versions here as support grows. Each must be compatible
         # with data/mobcensus/.../pack.mcmeta (min_format / max_format), and may
         # need version-aware expectations in tests/functional_test.py.
-        mc_version: ["26.2"]
+        mc_version: ["26.1.2", "26.2"]
 
     steps:
       - uses: actions/checkout@v4

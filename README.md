@@ -6,7 +6,7 @@
 
 ### How full is your hostile mob cap right now — and where is the load sitting?
 
-A pure-vanilla Minecraft **datapack** (MC 26.2) that answers the one question
+A pure-vanilla Minecraft **datapack** (MC 26.1–26.2) that answers the one question
 vanilla never answers cleanly: it estimates the **monster mob-cap fill per
 dimension**, and pinpoints the **hotspots** of cap-eating mobs so you can click
 to teleport straight to them.
@@ -15,7 +15,7 @@ to teleport straight to them.
 [![Functional](https://github.com/mhuot/mobcensus/actions/workflows/functional.yml/badge.svg)](https://github.com/mhuot/mobcensus/actions/workflows/functional.yml)
 [![Release](https://img.shields.io/github/v/release/mhuot/mobcensus?sort=semver)](https://github.com/mhuot/mobcensus/releases)
 [![License: MIT](https://img.shields.io/github/license/mhuot/mobcensus)](LICENSE)
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A?logo=minecraft&logoColor=white)](https://www.minecraft.net)
+[![Minecraft](https://img.shields.io/badge/Minecraft-26.1--26.2-62B47A?logo=minecraft&logoColor=white)](https://www.minecraft.net)
 
 <img src="docs/demo.png" width="620" alt="example output" />
 
@@ -155,7 +155,7 @@ hundreds of mobs. With no players online, the cap is correctly `0`.
 1. Copy the `mobcensus` folder into your world: `<world>/datapacks/mobcensus/`
 2. `/reload` (or restart). Confirm with `/datapack list` → `file/mobcensus`.
 
-Requirements: **Minecraft 26.2** (datapack format `101`–`107`). Works on any
+Requirements: **Minecraft 26.1–26.2** (datapack format `101`–`107`). Works on any
 world or server — vanilla, Fabric, Paper.
 
 ## Development
@@ -167,7 +167,7 @@ python tests/functional_test.py mc-mayhem        # behavioural tests vs a live s
 ```
 
 CI runs **validate → lint (black, pylint) → build**, plus a **functional**
-workflow that boots a real 26.2 server, asserts every function loads (no parse
+workflow that boots real 26.1.2 and 26.2 servers, asserts every function loads (no parse
 regressions), and checks clustering, counts, tag lanes, and the cap math.
 Tagging `vX.Y.Z` builds and publishes a release zip.
 

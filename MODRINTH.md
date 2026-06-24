@@ -22,7 +22,7 @@ this file is the copy-paste source.
 ## Environment / compatibility
 
 - Client side: **unsupported** · Server side: **required** (server-side datapack)
-- Game versions: **26.2**
+- Game versions: **26.1, 26.1.1, 26.1.2, 26.2**
 - Loaders: **Datapack**, and also tag **Fabric** + **Paper** so it surfaces for
   those platforms (a Datapack-only tag can read as "incompatible with vanilla";
   see modrinth/code#3538).
