@@ -71,7 +71,9 @@ def check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def setup_arena() -> None:
-    """Force-load spawn chunks for deterministic, player-free testing."""
+    """Force-load spawn chunks for deterministic, player-free testing. Assumes a
+    clean world (CI uses a flat world); ambient mobs on a populated world can
+    pollute the exact-count assertions."""
     rcon("forceload add -48 -48 48 48")
     rcon("kill @e[tag=mc_test]")
 
@@ -111,7 +113,7 @@ def test_functions_load() -> None:
 
 
 def test_cluster_grouping() -> None:
-    """Two tight clusters plus a stray group into sizes 4, 3, 1."""
+    """Two tight clusters plus a stray, sorted worst-first into 4, 3, 1."""
     for x, z in [(40, 40), (42, 41), (39, 43), (41, 38)]:
         summon("zombie", x, z)
     for x, z in [(-40, -40), (-42, -39), (-41, -42)]:
@@ -124,18 +126,19 @@ def test_cluster_grouping() -> None:
     rcon(
         "tag @e[type=#mobcensus:cap_mobs,nbt=!{PersistenceRequired:1b}] add mobcensus.cap"
     )
-    rcon("scoreboard players set #idx mobcensus 0")
-    rcon("scoreboard players set #max mobcensus 0")
     rcon("data modify storage mobcensus:find clusters set value []")
-    rcon("data modify storage mobcensus:find biggest set value {}")
     rcon("function mobcensus:_cluster_step")
+    rcon("function mobcensus:_sort_clusters")
     sizes = [
         storage_int("clusters[0].count"),
         storage_int("clusters[1].count"),
         storage_int("clusters[2].count"),
     ]
-    check("cluster sizes are 4, 3, 1", sizes == [4, 3, 1], str(sizes))
-    check("biggest hotspot is the 4-mob cluster", storage_int("biggest.pos[0]") == 40)
+    check("clusters sorted worst-first to 4, 3, 1", sizes == [4, 3, 1], str(sizes))
+    check(
+        "biggest (clusters[0]) is the 4-mob cluster at x=40",
+        storage_int("clusters[0].pos[0]") == 40,
+    )
 
 
 def test_persistent_excluded() -> None:

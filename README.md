@@ -128,7 +128,7 @@ rcon-cli "data get storage mobcensus:find cap"
 # → {overworld:{fill:47,cap:70,percent:67,players:1,regions:1}, nether:{...}, end:{...}}
 
 rcon-cli "function mobcensus:hotspots"
-rcon-cli "data get storage mobcensus:find clusters"   # [{cluster:1,count:18,pos:[...]}, ...]
+rcon-cli "data get storage mobcensus:find clusters"   # worst-first: [{count:18,pos:[...]}, {count:9,...}, ...]
 
 rcon-cli "function mobcensus:loaders"
 rcon-cli "data get storage mobcensus:find loaders"    # unattended only, with origin_type

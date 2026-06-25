@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `hotspots` and `loaders` now genuinely sort clusters **worst-first** (by count,
+  descending). The "worst first" label was previously inaccurate — clusters
+  printed in arbitrary entity order. The engine now decouples building from
+  printing: it collects all clusters, runs an in-datapack selection sort over the
+  list, then prints. The biggest hotspot is simply `clusters[0]`, and the RCON
+  `clusters`/`loaders` storage lists are sorted too.
+
 ## [2.2.0] - 2026-06-24
 
 ### Changed
