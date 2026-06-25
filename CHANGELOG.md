@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-06-24
+
 ### Fixed
 
 - `hotspots` and `loaders` now genuinely sort clusters **worst-first** (by count,
@@ -131,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD: validate + lint (black, pylint) + build on every push/PR, and a
   tag-triggered workflow that publishes a versioned datapack zip as a release.
 
-[Unreleased]: https://github.com/mhuot/mobcensus/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/mhuot/mobcensus/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/mhuot/mobcensus/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/mhuot/mobcensus/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mhuot/mobcensus/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mhuot/mobcensus/compare/v1.1.0...v2.0.0
